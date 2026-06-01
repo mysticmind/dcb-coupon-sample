@@ -1,0 +1,9 @@
+bin/
+obj/
+out/
+*.user
+.vs/
+.idea/
+.DS_Store
+*.suo
+TestResults/

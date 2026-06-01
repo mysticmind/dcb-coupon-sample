@@ -1,0 +1,31 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DCB.CouponSample</RootNamespace>
+
+    <!-- Diagnostic only: write source-generator output to disk so we can
+         inspect whether JasperFx.Events.SourceGenerator produced an evolver
+         for CouponRedemptionGuard. Output lands under obj/.../GeneratedFiles/.
+         Safe to remove once the build is healthy. -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)GeneratedFiles</CompilerGeneratedFilesOutputPath>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!--
+      Marten 9.x bundles JasperFx.Events.SourceGenerator at
+      analyzers/dotnet/cs/ inside its own nupkg, so this single reference is
+      enough to get the [BoundaryAggregate] dispatcher generated for types in
+      this assembly. If a Directory.Build.props higher up the tree strips
+      analyzers via IncludeAssets/ExcludeAssets, FetchForWritingByTags<T>(...)
+      will throw at runtime with:
+        "No source-generated dispatcher found for
+         Marten.Events.Aggregation.SingleStreamProjection<T, System.Guid>"
+    -->
+    <PackageReference Include="Marten" Version="9.3.4" />
+  </ItemGroup>
+
+</Project>

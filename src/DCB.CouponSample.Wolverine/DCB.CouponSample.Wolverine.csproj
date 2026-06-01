@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>DCB.CouponSample.Wolverine</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Marten" Version="9.3.4" />
+    <PackageReference Include="WolverineFx" Version="6.2.2" />
+    <PackageReference Include="WolverineFx.Marten" Version="6.2.2" />
+    <PackageReference Include="WolverineFx.Http" Version="6.2.2" />
+
+    <!--
+      Wolverine 6 split the runtime Roslyn compiler out of core. Without this
+      package, the host throws at startup:
+        "Wolverine is running in TypeLoadMode.Dynamic, which compiles
+         handler/middleware code at runtime, but no IAssemblyGenerator (Roslyn)
+         is registered."
+      The package auto-registers when referenced. The production alternative
+      is to pre-generate handler code with the `codegen write` CLI command and
+      set opts.CodeGeneration.TypeLoadMode = TypeLoadMode.Static. For a sample,
+      runtime compilation is the path of least friction.
+    -->
+    <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.2.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\DCB.CouponSample\DCB.CouponSample.csproj" />
+  </ItemGroup>
+
+</Project>
