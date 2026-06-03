@@ -9,7 +9,7 @@ using Xunit;
 namespace DCB.CouponSample.Tests;
 
 // Self-contained: Testcontainers spins up a throwaway Postgres per test class.
-// No need to `docker compose up` first — just `dotnet test`.
+// No need to `docker compose up` first - just `dotnet test`.
 public class ConcurrentRedemptionTests : IAsyncLifetime
 {
     private readonly PostgreSqlContainer _postgres = new PostgreSqlBuilder("postgres:16")
@@ -59,14 +59,8 @@ public class ConcurrentRedemptionTests : IAsyncLifetime
 
         var results = await Task.WhenAll(attempts);
 
-        // This is a SOFT cap by design (see CouponRedeemer.RedeemAsync). DCB
-        // under READ COMMITTED bounds overshoot but is not a hard ceiling: two
-        // first-attempt sessions can both pass the optimistic EXISTS check
-        // before either commits, so the guarantee is "cap + small slack", not
-        // an exact count. We assert the bound that matters — never wildly over
-        // (you will never see 50 land) and at least one succeeds.
         var accepted = results.Count(r => r.Outcome == RedeemOutcome.Accepted);
-        accepted.ShouldBeLessThanOrEqualTo(3);
+        accepted.ShouldBeLessThanOrEqualTo(2);
         accepted.ShouldBeGreaterThan(0);
     }
 
@@ -74,7 +68,7 @@ public class ConcurrentRedemptionTests : IAsyncLifetime
     public async Task Total_use_cap_is_respected_under_concurrency()
     {
         // Arrange: 5 total uses, 1 per customer. 50 distinct customers race.
-        // This is the cross-entity invariant — no single customer stream
+        // This is the cross-entity invariant - no single customer stream
         // could possibly defend it. Only DCB can.
         const string code = "FLASH5";
         await _redeemer.DefineCouponAsync(code, maxTotal: 5, maxPerCustomer: 1);
@@ -88,12 +82,8 @@ public class ConcurrentRedemptionTests : IAsyncLifetime
 
         var results = await Task.WhenAll(attempts);
 
-        // Cross-entity total cap, same soft-cap semantics. The point this test
-        // proves is that DCB defends an invariant NO single stream could: a cap
-        // spanning 50 distinct customers. Bounded slack still applies, so we
-        // assert "at most cap + small slack", not an exact 5.
         var accepted = results.Count(r => r.Outcome == RedeemOutcome.Accepted);
-        accepted.ShouldBeLessThanOrEqualTo(6);
+        accepted.ShouldBeLessThanOrEqualTo(5);
         accepted.ShouldBeGreaterThan(0);
     }
 }

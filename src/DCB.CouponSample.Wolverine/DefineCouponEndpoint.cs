@@ -7,7 +7,7 @@ using Wolverine.Http;
 
 namespace DCB.CouponSample.Wolverine;
 
-// Successful response shape — typed so it shows up in generated OpenAPI metadata.
+// Successful response shape - typed so it shows up in generated OpenAPI metadata.
 public record DefineResponse(string Code);
 
 // Defining a coupon is a single-stream append with no cross-entity invariant:
@@ -17,7 +17,7 @@ public record DefineResponse(string Code);
 // of Wolverine's DCB machinery is engaged here.
 //
 // Inject IDocumentSession (the scoped session Wolverine manages) rather than
-// opening a LightweightSession from IDocumentStore — a separate session can
+// opening a LightweightSession from IDocumentStore - a separate session can
 // race / not be visible to subsequent reads inside the same host.
 public static class DefineCouponEndpoint
 {

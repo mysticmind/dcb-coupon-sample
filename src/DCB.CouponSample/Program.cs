@@ -25,8 +25,7 @@ builder.Services.AddMarten(opts =>
     // HSTORE-backed tag storage gives faster reads/writes for DCB queries.
     // Plain TagTables mode works too; pick whichever your Postgres supports.
     opts.Events.DcbStorageMode = DcbStorageMode.HStore;
-})
-.UseLightweightSessions();
+});
 
 builder.Services.AddSingleton<CouponRedeemer>();
 

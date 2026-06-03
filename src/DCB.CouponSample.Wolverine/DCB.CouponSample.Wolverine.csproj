@@ -8,11 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Marten" Version="9.3.4" />
-    <PackageReference Include="WolverineFx" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.Marten" Version="6.2.2" />
-    <PackageReference Include="WolverineFx.Http" Version="6.2.2" />
-
     <!--
       Wolverine 6 split the runtime Roslyn compiler out of core. Without this
       package, the host throws at startup:
@@ -24,11 +19,23 @@
       set opts.CodeGeneration.TypeLoadMode = TypeLoadMode.Static. For a sample,
       runtime compilation is the path of least friction.
     -->
+    <PackageReference Include="WolverineFx.Http" Version="6.4.1" />
+    <PackageReference Include="WolverineFx.Marten" Version="6.4.1" />
     <PackageReference Include="WolverineFx.RuntimeCompilation" Version="6.2.2" />
-  </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\DCB.CouponSample\DCB.CouponSample.csproj" />
+    <!--
+      This project is self-contained: it carries its own copy of the domain
+      (Domain/*.cs) rather than referencing DCB.CouponSample, so a reader can
+      open just the Wolverine sample and see everything. The direct Marten
+      reference (rather than letting WolverineFx.Marten pull it transitively)
+      pins the version to match the plain sample and, crucially, brings in the
+      bundled JasperFx.Events.SourceGenerator analyzer so the [BoundaryAggregate]
+      dispatcher for CouponRedemptionGuard is generated in THIS assembly. An
+      analyzer does not flow across a transitive package reference, so without
+      this direct reference FetchForWritingByTags<T>(...) would throw at runtime
+      with "No source-generated dispatcher found".
+    -->
+    <PackageReference Include="Marten" Version="9.5.0" />
   </ItemGroup>
 
 </Project>

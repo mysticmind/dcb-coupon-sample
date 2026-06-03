@@ -25,7 +25,7 @@
         "No source-generated dispatcher found for
          Marten.Events.Aggregation.SingleStreamProjection<T, System.Guid>"
     -->
-    <PackageReference Include="Marten" Version="9.3.4" />
+    <PackageReference Include="Marten" Version="9.5.0" />
   </ItemGroup>
 
 </Project>

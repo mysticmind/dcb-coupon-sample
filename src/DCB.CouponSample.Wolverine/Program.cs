@@ -30,13 +30,6 @@ builder.Services.AddMarten(opts =>
     opts.Events.AddEventType<CouponDefined>();
     opts.Events.AddEventType<CouponRedeemed>();
 })
-// Critical: Wolverine's OutboxedSessionFactory opens sessions via the
-// registered ISessionFactory. Without UseLightweightSessions(), the default
-// "heavy" session is used and its identity map / dirty-tracking interferes
-// with FetchForWritingByTags<T> — every redemption sees a null aggregate
-// and returns 404 even though the events are committed and queryable from
-// a plain session.
-.UseLightweightSessions()
 .IntegrateWithWolverine();
 
 builder.Host.UseWolverine();
@@ -50,7 +43,7 @@ var app = builder.Build();
 // Discovers every [WolverinePost] / [WolverineGet] / etc. attribute in the
 // project and registers it as an ASP.NET route. Both DefineCouponEndpoint.Post
 // (a plain single-stream append) and RedeemCouponEndpoint.Post (DCB-aware) get
-// wired up here — the whole API speaks one style.
+// wired up here - the whole API speaks one style.
 app.MapWolverineEndpoints();
 
 app.Run("http://localhost:5081");

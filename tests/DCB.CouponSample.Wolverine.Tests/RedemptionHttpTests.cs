@@ -15,7 +15,7 @@ namespace DCB.CouponSample.Wolverine.Tests;
 
 // Black-box integration test of the Wolverine variant, exercised through HTTP.
 //
-// We don't care how Wolverine wires the DCB handler under the hood — we only
+// We don't care how Wolverine wires the DCB handler under the hood - we only
 // care that the API behaves correctly under contention. If you swapped out
 // Wolverine for plain Marten and kept the routes identical, the same test
 // would still pass. That's the point of testing at the seam.
@@ -67,15 +67,15 @@ public class RedemptionHttpTests : IAsyncLifetime
     [Fact]
     public async Task Per_customer_cap_is_respected_under_concurrency()
     {
-        // Arrange — define coupon with per-customer cap of 2.
+        // Arrange - define coupon with per-customer cap of 2.
         await _host.Scenario(s =>
         {
             s.Post.Json(new DefineCoupon("SUMMER25", 1000, 2)).ToUrl("/coupons");
             s.StatusCodeShouldBeOk();
         });
 
-        // Probe 1 — events are in the table, tagged correctly.
-        // Probe 2 — the boundary aggregate projects with MaxTotalUses set,
+        // Probe 1 - events are in the table, tagged correctly.
+        // Probe 2 - the boundary aggregate projects with MaxTotalUses set,
         // i.e. the exact call the redeem endpoint makes works here too.
         var store = _host.Services.GetRequiredService<IDocumentStore>();
         await using (var probe = store.LightweightSession())
@@ -101,7 +101,7 @@ public class RedemptionHttpTests : IAsyncLifetime
         var customerId = Guid.NewGuid();
         var client = _host.Server.CreateClient();
 
-        // Act — fire 50 parallel HTTP redemption requests for the same customer.
+        // Act - fire 50 parallel HTTP redemption requests for the same customer.
         var tasks = Enumerable.Range(0, 50)
             .Select(_ => client.PostAsJsonAsync(
                 "/coupons/SUMMER25/redeem",
@@ -115,13 +115,14 @@ public class RedemptionHttpTests : IAsyncLifetime
                 .OrderBy(g => g.Key)
                 .Select(g => $"{g.Key}={g.Count()}"));
 
-        // SOFT cap by design (see RedeemCouponEndpoint.Configure). DCB under
-        // READ COMMITTED bounds overshoot to "cap + small slack" rather than an
-        // exact ceiling, so we assert at most cap+1 OK responses. The rest are
-        // 409 (cap reached); a few may be 500 if they exhaust their retry
-        // budget under contention — both mean "your redemption did not land".
+        // HARD cap on Marten 9.4.0+ (see RedeemCouponEndpoint.Configure). DCB
+        // under READ COMMITTED now serializes concurrent same-tag appends on a
+        // row-level constraint, so exactly the cap lands - we assert at most
+        // cap OK responses, never over. The rest are 409 (cap reached); a few
+        // may be 500 if they exhaust their retry budget under contention - both
+        // mean "your redemption did not land".
         var ok = responses.Count(r => r.StatusCode == HttpStatusCode.OK);
-        ok.ShouldBeLessThanOrEqualTo(3, $"status code breakdown: {breakdown}");
+        ok.ShouldBeLessThanOrEqualTo(2, $"status code breakdown: {breakdown}");
         ok.ShouldBeGreaterThan(0, $"status code breakdown: {breakdown}");
     }
 
@@ -148,20 +149,15 @@ public class RedemptionHttpTests : IAsyncLifetime
 
         var responses = await Task.WhenAll(tasks);
 
-        // Cross-entity total cap, same soft-cap semantics: at most cap + small
-        // slack of the 50 distinct customers redeem successfully. The point is
-        // that DCB defends a cap NO single stream could — bounded overshoot,
-        // never wildly over.
+        // Cross-entity total cap, same hard-cap semantics: exactly the cap of
+        // the 50 distinct customers redeem successfully. The point is that DCB
+        // defends a cap NO single stream could - exact, never over.
         var ok = responses.Count(r => r.StatusCode == HttpStatusCode.OK);
-        ok.ShouldBeLessThanOrEqualTo(6);
+        ok.ShouldBeLessThanOrEqualTo(5);
         ok.ShouldBeGreaterThan(0);
     }
 
-    [Fact(Skip = "Marten throws InvalidDocumentException trying to build a " +
-                  "DocumentSchema for CouponRedemptionGuard on the empty-results " +
-                  "branch (no Id on the boundary aggregate). The non-empty " +
-                  "branches in the other tests already cover the 404 path " +
-                  "(guard.MaxTotalUses == 0 → NotFound). Track upstream.")]
+    [Fact]
     public async Task Redeeming_an_unknown_coupon_returns_404()
     {
         await _host.Scenario(s =>

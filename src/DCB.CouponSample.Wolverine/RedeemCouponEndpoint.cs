@@ -15,11 +15,11 @@ namespace DCB.CouponSample.Wolverine;
 // POST body for /coupons/{code}/redeem. The `code` arrives as a route parameter.
 public record RedeemCouponBody(Guid CustomerId, decimal OrderTotal);
 
-// Successful response shape — typed so it shows up in generated OpenAPI metadata.
+// Successful response shape - typed so it shows up in generated OpenAPI metadata.
 public record RedeemResponse(string Status);
 
 // The HTTP route, the consistency boundary, the cap check, and the write all
-// live in this one method. That isn't a workaround — it's how DCB endpoints
+// live in this one method. That isn't a workaround - it's how DCB endpoints
 // want to look. The "validation" here reads from the same boundary the
 // endpoint writes to, so it isn't really validation; it's the business
 // decision. Wolverine.HTTP's Validate / Before middleware is for input-shape
@@ -75,18 +75,18 @@ public static class RedeemCouponEndpoint
     }
 
     // Wolverine does NOT auto-retry on transient exceptions. Without this, a
-    // DcbConcurrencyException from a concurrent redemption — the DCB EXISTS
-    // check tripping because a newer matching event landed since we read —
-    // would bubble up as a 500 instead of being retried into a clean 409.
+    // DcbConcurrencyException from a concurrent redemption - the DCB check
+    // tripping because a newer matching event landed since we read - would
+    // bubble up as a 500 instead of being retried into a clean 409.
     //
-    // This is a SOFT cap (at-most-N with bounded slack), by design. Under
-    // READ COMMITTED the optimistic DCB check stops wild overshoot but does
-    // not make the cap a hard ceiling: under heavy contention you may see
-    // cap+1. We accept that — for a marketing coupon an occasional extra
-    // redemption is far cheaper than serializing every redemption of a hot
-    // coupon. The retry just converts a lost optimistic race into a correct
-    // rejection. See CouponRedeemer in the plain-Marten project for the same
-    // reasoning written out long-hand.
+    // This is a HARD cap (exact ceiling) on Marten 9.4.0+. Under READ
+    // COMMITTED the DCB check now serializes concurrent same-tag appends on a
+    // row-level constraint, so the cap holds exactly: one writer wins, the
+    // rest conflict and this retry converts each loser into a correct 409. The
+    // cooldown is just backoff, not a correctness requirement (on 9.3.x the
+    // check was non-locking and the cooldown was needed to dodge the race; see
+    // CouponRedeemer in the plain-Marten project for that history written out
+    // long-hand).
     public static void Configure(HandlerChain chain)
     {
         // RetryWithCooldown takes one delay per attempt; the count of delays =
